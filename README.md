@@ -2,6 +2,8 @@
 
 A lightweight macOS menu bar app for developers to detect and kill processes listening on localhost ports. Stop hunting for zombie servers!
 
+![PortKiller Screenshot](screenshot.jpg)
+
 ## Features
 
 - **Menu Bar Icon** - Always accessible from your status bar

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Build DMG for PortKiller
+# Build DMG for Port Killer for Dev
 # Usage: ./scripts/build-dmg.sh [version]
 
 set -e
@@ -8,8 +8,9 @@ set -e
 VERSION=${1:-"1.0.0"}
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="$PROJECT_DIR/build"
+RESOURCES_DIR="$PROJECT_DIR/scripts/dmg-resources"
 
-echo "Building PortKiller v$VERSION..."
+echo "🔨 Building Port Killer for Dev v$VERSION..."
 
 # 1. Build Release
 cd "$PROJECT_DIR"
@@ -22,28 +23,33 @@ xcodebuild -project PortKiller.xcodeproj \
 APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData/PortKiller-*/Build/Products/Release -name "PortKiller.app" -type d 2>/dev/null | head -1)
 
 if [ -z "$APP_PATH" ]; then
-    echo "Error: PortKiller.app not found"
+    echo "❌ Error: PortKiller.app not found"
     exit 1
 fi
 
-# 3. Prepare DMG contents
-mkdir -p "$BUILD_DIR/dmg-contents"
-rm -rf "$BUILD_DIR/dmg-contents/*"
-cp -R "$APP_PATH" "$BUILD_DIR/dmg-contents/"
-ln -sf /Applications "$BUILD_DIR/dmg-contents/Applications"
+echo "📦 Found app: $APP_PATH"
 
-# 4. Create DMG
+# 3. Prepare build directory
+mkdir -p "$BUILD_DIR"
 DMG_NAME="PortKiller-$VERSION.dmg"
 rm -f "$BUILD_DIR/$DMG_NAME"
 
-hdiutil create -volname "PortKiller" \
-    -srcfolder "$BUILD_DIR/dmg-contents" \
-    -ov -format UDZO \
-    "$BUILD_DIR/$DMG_NAME"
+# 4. Create styled DMG with create-dmg
+echo "🎨 Creating styled DMG..."
 
-# 5. Cleanup
-rm -rf "$BUILD_DIR/dmg-contents"
-rm -rf "$BUILD_DIR/PortKiller.app"
+create-dmg \
+    --volname "Port Killer for Dev" \
+    --volicon "$APP_PATH/Contents/Resources/AppIcon.icns" \
+    --background "$RESOURCES_DIR/background.png" \
+    --window-pos 200 120 \
+    --window-size 600 400 \
+    --icon-size 80 \
+    --icon "PortKiller.app" 150 180 \
+    --hide-extension "PortKiller.app" \
+    --app-drop-link 450 180 \
+    --no-internet-enable \
+    "$BUILD_DIR/$DMG_NAME" \
+    "$APP_PATH"
 
 echo ""
 echo "✅ Build complete!"
