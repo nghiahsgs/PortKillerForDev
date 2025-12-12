@@ -15,12 +15,36 @@ enum PortScannerError: Error, LocalizedError {
 actor PortScanner {
     static let shared = PortScanner()
 
+    /// System processes to hide (not useful for devs)
+    private let systemProcessBlacklist: Set<String> = [
+        "ControlCe",    // macOS Control Center
+        "rapportd",     // AirDrop/Handoff
+        "sharingd",     // macOS Sharing
+        "WiFiAgent",    // WiFi
+        "bluetoothd",   // Bluetooth
+        "airportd",     // Airport
+        "identityservicesd",
+        "UserEventAgent",
+        "mDNSResponder",
+        "netbiosd",
+    ]
+
+    /// App helper processes (internal IPC, not useful)
+    private let helperProcessPatterns: [String] = [
+        "Code\\x20H",   // VS Code Helper
+        "Electron",     // Electron helpers
+        "Helper",       // Generic helpers
+    ]
+
     private init() {}
 
     /// Scan all listening TCP ports
     func scanAllPorts() async throws -> [ProcessInfo] {
         let output = try await runLsof(arguments: ["-iTCP", "-sTCP:LISTEN", "-n", "-P"])
         var processes = parseLsofOutput(output)
+
+        // Filter out system/helper processes
+        processes = processes.filter { !isSystemProcess($0.name) }
 
         // Fetch additional details for each process (working directory)
         for i in processes.indices {
@@ -29,7 +53,35 @@ actor PortScanner {
             processes[i].fullCommand = details.command
         }
 
+        // Filter out processes running from root "/" (likely system)
+        processes = processes.filter { process in
+            // Keep if no cwd info (can't determine)
+            guard let cwd = process.workingDirectory else { return true }
+            // Keep if cwd is in user directory or common dev paths
+            return cwd.hasPrefix("/Users/") ||
+                   cwd.hasPrefix("/opt/") ||
+                   cwd.hasPrefix("/usr/local/") ||
+                   cwd.contains("homebrew")
+        }
+
         return processes
+    }
+
+    /// Check if process is a system/helper process
+    private func isSystemProcess(_ name: String) -> Bool {
+        // Check blacklist
+        if systemProcessBlacklist.contains(name) {
+            return true
+        }
+
+        // Check helper patterns
+        for pattern in helperProcessPatterns {
+            if name.contains(pattern) || name.hasPrefix(pattern) {
+                return true
+            }
+        }
+
+        return false
     }
 
     /// Scan a specific port
