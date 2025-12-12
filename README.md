@@ -1,6 +1,6 @@
-# PortKiller
+# Port Killer for Dev
 
-A lightweight macOS menu bar app to detect and kill processes listening on localhost ports.
+A lightweight macOS menu bar app for developers to detect and kill processes listening on localhost ports. Stop hunting for zombie servers!
 
 ## Features
 
@@ -8,7 +8,10 @@ A lightweight macOS menu bar app to detect and kill processes listening on local
 - **Port Detection** - Scans all listening TCP ports
 - **One-Click Kill** - Terminate processes instantly
 - **Smart Icons** - Recognizes Node.js, Python, Docker, PostgreSQL, Redis, Go, Java, Ruby, Nginx, Rust, PHP
+- **Project Names** - Shows which project each port belongs to (e.g., `lavni-api` instead of just `node`)
+- **Dev-Focused** - Filters out system processes, shows only your dev servers
 - **No Dock Icon** - Stays out of your way
+- **Lightweight** - Only ~170KB, native Swift (no Electron bloat)
 
 ## Requirements
 

@@ -39,7 +39,7 @@ struct PortListView: View {
 
     private var headerView: some View {
         HStack {
-            Text("PortKiller")
+            Text("Port Killer")
                 .font(.headline)
                 .fontWeight(.semibold)
 
