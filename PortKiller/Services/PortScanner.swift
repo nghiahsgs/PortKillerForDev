@@ -20,7 +20,16 @@ actor PortScanner {
     /// Scan all listening TCP ports
     func scanAllPorts() async throws -> [ProcessInfo] {
         let output = try await runLsof(arguments: ["-iTCP", "-sTCP:LISTEN", "-n", "-P"])
-        return parseLsofOutput(output)
+        var processes = parseLsofOutput(output)
+
+        // Fetch additional details for each process (working directory)
+        for i in processes.indices {
+            let details = await getProcessDetails(pid: processes[i].pid)
+            processes[i].workingDirectory = details.cwd
+            processes[i].fullCommand = details.command
+        }
+
+        return processes
     }
 
     /// Scan a specific port
@@ -119,5 +128,69 @@ actor PortScanner {
         let portString = lastComponent.replacingOccurrences(of: "(LISTEN)", with: "").trimmingCharacters(in: .whitespaces)
 
         return Int(portString)
+    }
+
+    // MARK: - Process Details
+
+    private func getProcessDetails(pid: pid_t) async -> (cwd: String?, command: String?) {
+        async let cwd = getWorkingDirectory(pid: pid)
+        async let cmd = getFullCommand(pid: pid)
+        return await (cwd, cmd)
+    }
+
+    /// Get working directory of a process using lsof
+    private func getWorkingDirectory(pid: pid_t) async -> String? {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/sbin/lsof")
+        task.arguments = ["-p", "\(pid)"]
+
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = FileHandle.nullDevice
+
+        do {
+            try task.run()
+            task.waitUntilExit()
+
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8) ?? ""
+
+            // Find line with "cwd" (current working directory)
+            for line in output.components(separatedBy: "\n") {
+                if line.contains(" cwd ") {
+                    // Format: "node    12345 user  cwd    DIR  1,4  ... /path/to/dir"
+                    let parts = line.split(whereSeparator: { $0.isWhitespace })
+                    if let lastPart = parts.last {
+                        return String(lastPart)
+                    }
+                }
+            }
+        } catch {
+            // Silently fail - cwd is optional
+        }
+
+        return nil
+    }
+
+    /// Get full command line using ps
+    private func getFullCommand(pid: pid_t) async -> String? {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/ps")
+        task.arguments = ["-p", "\(pid)", "-o", "command="]
+
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = FileHandle.nullDevice
+
+        do {
+            try task.run()
+            task.waitUntilExit()
+
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            return output?.isEmpty == true ? nil : output
+        } catch {
+            return nil
+        }
     }
 }

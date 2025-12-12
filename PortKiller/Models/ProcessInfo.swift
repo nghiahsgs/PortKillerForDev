@@ -8,6 +8,15 @@ struct ProcessInfo: Identifiable, Equatable {
     let port: Int
     let command: String
     let processType: ProcessType
+    var workingDirectory: String?
+    var fullCommand: String?
+
+    /// Short project name extracted from working directory
+    var projectName: String? {
+        guard let cwd = workingDirectory else { return nil }
+        // Get last path component as project name
+        return (cwd as NSString).lastPathComponent
+    }
 
     static func == (lhs: ProcessInfo, rhs: ProcessInfo) -> Bool {
         lhs.pid == rhs.pid && lhs.port == rhs.port

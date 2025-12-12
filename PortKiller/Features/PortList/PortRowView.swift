@@ -7,6 +7,14 @@ struct PortRowView: View {
 
     @State private var isHovering = false
 
+    private var tooltipText: String {
+        var lines = ["PID: \(process.pid)"]
+        if let cwd = process.workingDirectory {
+            lines.append("Path: \(cwd)")
+        }
+        return lines.joined(separator: "\n")
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             // Process icon
@@ -18,9 +26,11 @@ struct PortRowView: View {
                     .font(.system(.body, design: .default, weight: .medium))
                     .lineLimit(1)
 
-                Text(process.processType.displayName)
+                // Show project name if available, otherwise show process type
+                Text(process.projectName ?? process.processType.displayName)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
 
             Spacer()
@@ -46,7 +56,7 @@ struct PortRowView: View {
             }
             .buttonStyle(.plain)
             .disabled(isKilling)
-            .help("Kill process (PID: \(process.pid))")
+            .help(tooltipText)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
