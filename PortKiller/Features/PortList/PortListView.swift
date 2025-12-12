@@ -78,7 +78,7 @@ struct PortListView: View {
                 }
             }
         }
-        .frame(maxHeight: 300)
+        .frame(height: 300)
     }
 
     // MARK: - States
@@ -91,7 +91,7 @@ struct PortListView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .frame(height: 120)
+        .frame(height: 300)
         .frame(maxWidth: .infinity)
     }
 
@@ -113,7 +113,7 @@ struct PortListView: View {
             .controlSize(.small)
         }
         .padding()
-        .frame(height: 150)
+        .frame(height: 300)
         .frame(maxWidth: .infinity)
     }
 
@@ -132,7 +132,7 @@ struct PortListView: View {
                 .multilineTextAlignment(.center)
         }
         .padding()
-        .frame(height: 150)
+        .frame(height: 300)
         .frame(maxWidth: .infinity)
     }
 
